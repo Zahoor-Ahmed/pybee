@@ -79,7 +79,7 @@ def upload_file(remote_path=None):
             script_file.write(winscp_command)
             script_path = script_file.name
 
-        result = subprocess.run(script_path, shell=True, text=True)
+        result = subprocess.run(script_path, text=True)
 
         if result.returncode == 0:
             print(" . . . . . . . . . . . . . . . . . . . . . . . . ~ Done.")
@@ -153,7 +153,7 @@ def download_file(remote_file_path):
             script_file.write(winscp_command)
             script_path = script_file.name
 
-        result = subprocess.run(script_path, shell=True, text=True)
+        result = subprocess.run(script_path, text=True)
 
         if result.returncode == 0:
             print(" . . . . . . . . . . . . . . . . . . . . . . . . ~ Done.")
@@ -233,7 +233,7 @@ def download_df(remote_file_path,
         with open(bat_path, "w") as script_file:
             script_file.write(winscp_command)
 
-        result = subprocess.run(bat_path, shell=True, text=True)
+        result = subprocess.run(bat_path, text=True)
 
         if result.returncode == 0:
             tablename = file_name.rsplit(".csv", 1)[0]
@@ -329,7 +329,7 @@ def table_to_df(table_name):
         # 1. Get column headers
         print("1. Fetching column headers", end="")
         schema_query = f"DESCRIBE {table_name}"
-        output, _ = run_sql(schema_query,  io=0)
+        output, _ = run_sql(schema_query, io=0)
         df = text_to_df(output)
         header_row = ','.join(df['col_name'].astype(str).tolist())
         print_done("1. Fetching column headers")
@@ -350,7 +350,7 @@ def table_to_df(table_name):
         # 3. Combine parts into a single CSV file
         print("3. Combining parts into a single CSV file", end="")
         final_csv_path = f"{remote_dir}/{table_name}.csv"
-        tmp_csv_path = f"{remote_dir}/{table_name}.csv"
+        tmp_csv_path = f"{remote_dir}/tmp_{table_name}.csv"
         getmerge_command = f"""
         source {hdfs_env};
         kinit -kt {keytab} {beeline_user};
@@ -378,13 +378,14 @@ def table_to_df(table_name):
         run_shell(chmod_command)
         print_done("5. Changing file permissions")
 
-        # 6. Download to local and return as DataFrame
+        # 6. Download and return as DataFrame
         df_local = download_df(remote_file_path=final_csv_path)
         return df_local
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
         return None
+
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -424,7 +425,7 @@ def df_to_Table(df, df_name="default_df"):
             script_file.write(winscp_command)
             script_path = script_file.name
 
-        result = subprocess.run(script_path, shell=True, text=True)
+        result = subprocess.run(script_path, text=True)
         if result.returncode == 0:
             print(" . . . . . . . . . . . . . . . . . . . . . . . . . .  ~ Done.")
         else:
