@@ -350,14 +350,11 @@ def table_to_df(table_name):
         # 3. Combine parts into a single CSV file
         print("3. Combining parts into a single CSV file", end="")
         final_csv_path = f"{remote_dir}/{table_name}.csv"
-        tmp_csv_path = f"{remote_dir}/tmp_{table_name}.csv"
         getmerge_command = f"""
         source {hdfs_env};
         kinit -kt {keytab} {beeline_user};
-        hdfs dfs -getmerge {hdfs_output_path} {tmp_csv_path};
         echo "{header_row}" > {final_csv_path};
-        cat {tmp_csv_path} >> {final_csv_path};
-        rm -f {tmp_csv_path}
+        hdfs dfs -cat {hdfs_output_path}/* >> {final_csv_path}
         """
         run_shell(getmerge_command)
         print_done("3. Combining parts into a single CSV file")
