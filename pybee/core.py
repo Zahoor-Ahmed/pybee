@@ -93,8 +93,7 @@ def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
 
     log_file_path = None
     if log_enabled:
-        root_dir = Path.cwd()
-        logs_dir = f"{root_dir}/xlogs"
+        logs_dir = os.path.normpath(os.path.expanduser("~/pb_logs"))
         current_year = datetime.datetime.now().strftime("%Y")
         current_month = datetime.datetime.now().strftime("%m")
         year_dir = os.path.join(logs_dir, current_year)
