@@ -1,10 +1,3 @@
-"""
-core.py
-
-This module provides the core functionality for executing SQL queries over Beeline
-via SSH. It includes session management, output formatting, and result handling.
-"""
-
 import os
 import re
 import time
@@ -16,17 +9,6 @@ from .utils import clean_sql, alert
 from .config import BEELINE_CONFIG
 
 def beeline_session(shell, queue_name=None, timeout=10):
-    """
-    Initiate a Beeline session through a remote shell.
-
-    Args:
-        shell: An active shell object obtained from an SSH connection.
-        queue_name (str): Name of the resource queue to use in Beeline.
-        timeout (int): Maximum wait time in seconds for the connection to establish.
-
-    Raises:
-        TimeoutError: If the Beeline session does not connect within the specified timeout.
-    """
     config = BEELINE_CONFIG()
     env_path = config.get("env_path", "")
     keytab_path = config.get("keytab_path", "")
@@ -80,22 +62,8 @@ def extract_query_output(output):
 
 
 def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
-    """
-    Execute an SQL query through Beeline using an SSH shell.
-
-    Args:
-        sql_query (str): The SQL query to execute it can contructed dynamically using python formatted strings before passing here.
-        queue_name (str): The Beeline resource queue to connect to if configured.
-        io (bool): If True, print the output.
-        timeout (int): Maximum execution time in seconds.
-        log_enabled (bool): If True, enable logging of the query output/errors.
-
-    Returns:
-        tuple: A tuple containing the output (str) and row count (str).
-    """
-
     if queue_name is None:
-        queue_name = BEELINE_CONFIG().get("DEFAULT_QUEUE","")
+        queue_name = BEELINE_CONFIG().get("DEFAULT_QUEUE", "")
 
     ssh_client, shell = ssh_connection()
     beeline_session(shell, queue_name)
