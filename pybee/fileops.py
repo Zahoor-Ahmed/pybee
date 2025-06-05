@@ -54,7 +54,7 @@ def upload_file(remote_path=None):
     remote_file_path = f"{remote_path}/{new_file_name}" if remote_path else new_file_name
 
     project_root = Path(__file__).resolve().parent.parent
-    log_dir = os.path.normpath(os.path.expanduser("~/pb_logs/winscp"))
+    log_dir = Path(os.path.expanduser("~/pb_logs/winscp"))
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = str(log_dir / "WinSCP.log")
 
@@ -127,7 +127,7 @@ def download_file(remote_file_path):
 
     # Prepare log directory
     project_root = Path(__file__).resolve().parent.parent
-    log_dir = os.path.normpath(os.path.expanduser("~/pb_logs/winscp"))
+    log_dir = Path(os.path.expanduser("~/pb_logs/winscp"))
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = str(log_dir / "WinSCP.log")
 
@@ -217,7 +217,7 @@ def download_df(remote_file_path,
     hostkey = config.get("hostkey", "")
 
     project_root = Path(__file__).resolve().parent.parent
-    log_dir = os.path.normpath(os.path.expanduser("~/pb_logs/winscp"))
+    log_dir = Path(os.path.expanduser("~/pb_logs/winscp"))
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = str(log_dir / "WinSCP.log")
     
