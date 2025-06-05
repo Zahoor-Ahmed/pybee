@@ -163,10 +163,10 @@ def clean_sql(sql):
     lines = sql.strip().splitlines()
     cleaned_lines = []
     for line in lines:
-        stripped = line.lstrip()
-        if not stripped.startswith("--"):
-            cleaned_lines.append(stripped.replace("\t", " "))
-    return " ".join(cleaned_lines).replace(";", "") + ";"
+        stripped = line.strip()  # Remove leading/trailing spaces and tabs
+        if stripped:             # Skip empty lines
+            cleaned_lines.append(stripped)
+    return "\n".join(cleaned_lines)
 
 
 from tkinter.filedialog import asksaveasfilename

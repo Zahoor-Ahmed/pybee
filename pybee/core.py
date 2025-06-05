@@ -9,7 +9,6 @@ import os
 import re
 import time
 import datetime
-# from IPython.display import display, HTML
 from pathlib import Path
 
 from .ssh import ssh_connection
@@ -52,6 +51,32 @@ def beeline_session(shell, queue_name=None, timeout=10):
             break
         time.sleep(0.1)
 
+def extract_query_output(output):
+    output = output.replace('\r\n', '\n')
+    lines = output.splitlines()
+
+    # Locate the start of the result table (first "+---" line)
+    table_start_idx = next((i for i, line in enumerate(lines) if line.strip().startswith("+") and "-" in line), None)
+    if table_start_idx is None:
+        return output.strip(), ""
+
+    # Locate the last "+---" line which ends the table
+    table_end_idx = None
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].strip().startswith("+") and "-" in lines[i]:
+            table_end_idx = i
+            break
+
+    # Find the row summary (e.g., "10 rows selected") after table end
+    rows_line = ""
+    if table_end_idx is not None:
+        for i in range(table_end_idx + 1, len(lines)):
+            if re.match(r"^\d+\srows selected|No rows selected|1 row selected", lines[i].strip()):
+                rows_line = lines[i].strip()
+                break
+
+    table_output = "\n".join(lines[table_start_idx:table_end_idx + 1])
+    return table_output.strip(), rows_line
 
 
 def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
@@ -73,12 +98,13 @@ def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
         queue_name = BEELINE_CONFIG().get("DEFAULT_QUEUE","")
 
     ssh_client, shell = ssh_connection()
-    beeline_session(shell,queue_name)
+    beeline_session(shell, queue_name)
 
     sql_query = clean_sql(sql_query)
     while shell.recv_ready():
-        shell.recv(65535)  # Clear buffer
+        shell.recv(65535)
     shell.send(sql_query + "\n;\n")
+
     output = ''
     start_time = time.time()
     while True:
@@ -89,25 +115,13 @@ def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
         if shell.recv_ready():
             new_data = shell.recv(65535).decode('utf-8')
             output += new_data
-            if any(pattern in new_data for pattern in ["rows selected", "No rows selected", "row selected", "Error"]):
+            if any(x in new_data for x in ["rows selected", "No rows selected", "row selected", "Error"]):
                 alert()
                 break
         else:
             time.sleep(0.001)
-    
-    # ---------------------------
-    output = output.replace('\r\n', '\n')           # Normalize line endings
-    cleaned_sql = clean_sql(sql_query).strip()      # Use the exact SQL query (may have extra newlines, so strip it)
-    sql_index = output.find(cleaned_sql)            # Find where SQL query appears in output
-    if sql_index != -1 and "Error" not in output:
-        query_output = output[sql_index + len(cleaned_sql):].lstrip()
-        pattern = r'\n(\d{1,3}(,\d{3})*\srows selected|No rows selected|1 row selected)'
-        parts = re.split(pattern, query_output, maxsplit=1)
-        query_output = parts[0]
-        rows = "\n" + parts[1] if len(parts) > 1 else ""
-    else:
-        query_output = output[sql_index + len(cleaned_sql):].lstrip() if sql_index != -1 else output
-        rows = ""
+
+    query_output, rows = extract_query_output(output)
 
     log_file_path = None
     if log_enabled:
@@ -127,7 +141,7 @@ def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
             log_file.write(f"{timestamp}\n")
             log_file.write("-" * 70 + "\n")
             log_file.write("\n" + sql_query + "\n\n")
-            log_file.write(query_output.lstrip() + rows + "\n")
+            log_file.write(query_output + "\n" + rows + "\n")
 
     if "Error" in output and log_file_path:
         file_name_only = os.path.basename(log_file_path)
@@ -135,10 +149,11 @@ def run_sql(sql_query, queue_name=None, io=True, timeout=0, log_enabled=True):
         <p>An error occurred, click to see the logs: 
         <a href='{log_file_path}' target='_blank'>{file_name_only}</a></p>
         """
-        # display(HTML(error_message_html))
 
     if io:
-        print(f"{query_output}{rows}")
+        print(query_output)
+        if rows:
+            print(rows)
 
     ssh_client.close()
     time.sleep(0.5)
