@@ -118,3 +118,43 @@ def run_shell(command: str) -> str:
     ssh_client.close()
     return clean_output(output, command)
 
+
+def run_shell_blocking(command: str, marker="__COMPLETE__") -> str:
+    """
+    Executes a shell command and blocks until a marker is seen.
+    Use for critical chained shell steps (e.g., writing large files).
+    """
+    from .config import BEELINE_CONFIG
+    from .ssh import ssh_connection
+    import time
+
+    config = BEELINE_CONFIG()
+
+    if any(kw in command.lower() for kw in ["hdfs", "hadoop"]):
+        env_cmd = f"source {config.get('env_path')}"
+        kinit_cmd = f"kinit -kt {config.get('keytab_path')} {config.get('user')}"
+        command = f"{env_cmd}; {kinit_cmd}; {command}"
+
+    ssh_client, shell = ssh_connection()
+    shell.send(command + "\n")
+    time.sleep(1)
+
+    output = ""
+    timeout = 600  # Max wait time in seconds (10 min)
+    start = time.time()
+
+    while time.time() - start < timeout:
+        if shell.recv_ready():
+            chunk = shell.recv(65535).decode("utf-8")
+            output += chunk
+            if marker in chunk:
+                break
+        else:
+            time.sleep(0.5)
+
+    ssh_client.close()
+
+    if marker not in output:
+        raise RuntimeError("Shell command may not have completed fully.")
+
+    return clean_output(output, command)
