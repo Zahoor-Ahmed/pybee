@@ -12,7 +12,7 @@ This package provides high-level utilities for:
 
 # Import public API from submodules
 
-from .ssh import ssh_connection, run_shell
+from .ssh import ssh_connection, run_shell, run_shell_blocking
 from .core import beeline_session, run_sql
 from .fileops import upload_file, download_file, df_to_Table, table_to_df, download_df
 from .utils import alert, text_to_df, to_sql_inlist, todayx, this_monthx, export, daypartitions, daypartitions_to_sec, set_env
@@ -24,7 +24,7 @@ except:
     pass  # Ignore IPython magic registration in non-IPython environments
 
 __all__ = [
-    'ssh_connection', 'run_shell',
+    'ssh_connection', 'run_shell', 'run_shell_blocking',
     'beeline_session', 'run_sql',
     'upload_file', 'download_file', 'df_to_Table', 'table_to_df', 'download_df',
     'alert', 'text_to_df', 'to_sql_inlist', 'todayx', 'this_monthx', 'export', 'daypartitions', 'daypartitions_to_sec', 'set_env',
