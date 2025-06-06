@@ -13,7 +13,7 @@ from tkinter import Tk, filedialog, messagebox
 from .utils import alert, text_to_df
 from .config import WINSCP_CONFIG, BEELINE_CONFIG
 from .core import run_sql
-from .ssh import run_shell
+from .ssh import run_shell, run_shell_blocking
 
 
 def check_winscp_installed():
@@ -354,9 +354,10 @@ def table_to_df(table_name):
         source {hdfs_env};
         kinit -kt {keytab} {beeline_user};
         echo "{header_row}" > {final_csv_path};
-        hdfs dfs -cat {hdfs_output_path}/* >> {final_csv_path}
+        hdfs dfs -cat {hdfs_output_path}/* >> {final_csv_path};
+        echo __COMPLETE__
         """
-        run_shell(getmerge_command)
+        run_shell_blocking(getmerge_command)
         print_done("3. Combining parts into a single CSV file")
 
         # 4. Clean up HDFS
